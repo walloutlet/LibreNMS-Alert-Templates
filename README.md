@@ -176,7 +176,7 @@ Warning-level template for ping latency between 5-10ms. Provides early warning b
 
 ### Port Status Up/Down
 
-**File:** `Port Status Up/Port Status Up_Down (HTML).md`
+**File:** `Port Status Up_Down (HTML).md`
 
 **Assigned to:** Port status up/down
 
