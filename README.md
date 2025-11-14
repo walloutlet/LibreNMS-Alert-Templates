@@ -6,6 +6,12 @@ This repository contains custom HTML alert templates for LibreNMS network monito
 
 LibreNMS uses these templates to format alert notifications sent via email or other transport methods. Each template is designed for specific alert types and includes conditional formatting, device details, troubleshooting recommendations, and visual indicators (color-coded status markers and progress bars).
 
+## Alert Template Assignments
+
+The following image shows how templates are assigned to alert rules in LibreNMS:
+
+![Alert Template Assignments](Alert%20Template%20Assignments.png)
+
 ## Quick Reference
 
 | Template File | Alert Rule(s) | Severity | Purpose |
@@ -20,8 +26,6 @@ LibreNMS uses these templates to format alert notifications sent via email or ot
 | [Port Utilization - Critical (HTML).md](#port-utilization---critical) | Port utilisation over 95% | Critical | Port bandwidth usage above 95% |
 | [Port Utilization - Warning (HTML).md](#port-utilization---warning) | Port Utilization between 80% - 95% | Warning | Port bandwidth usage between 80-95% |
 | [Storage capacity above 90% (HTTP).md](#storage-capacity-above-90) | Storage Capacity >= 90% | Critical | Filesystem usage at or above 90% |
-
-> See [Alert Template Assignments.png](Alert%20Template%20Assignments.png) for the visual mapping of templates to alert rules in LibreNMS.
 
 ---
 
@@ -49,7 +53,7 @@ A versatile HTML template serving as the catch-all for various general alerts. F
 - Dynamic header showing alert severity or acknowledgment status
 - Three main sections: Alert Details, Device Details, and Alert Information
 - Minimal formatting suitable for multiple alert types
-- Links to device page in LibreNMS (http://nms.cabnetworks.ca:8000)
+- Links to device page in LibreNMS
 
 ---
 
@@ -288,7 +292,7 @@ All templates follow a consistent structure:
 ### 1. Alert Title Section
 ```text
 Dynamic title with emoji indicators and device hostname
-Example: =¨ ALERT: DEVICE-NAME - CRITICAL - Alert Description
+Example: =ï¿½ ALERT: DEVICE-NAME - CRITICAL - Alert Description
 ```
 
 ### 2. Recovery Title Section
@@ -346,7 +350,7 @@ Templates are assigned to alert rules in the LibreNMS web interface:
 3. In the **Alert Templates** section, select the appropriate template
 4. Configure alert rule conditions and thresholds
 
-See [Alert Template Assignments.png](Alert%20Template%20Assignments.png) for the current template assignments.
+Refer to the [Alert Template Assignments](#alert-template-assignments) section above for example template assignments.
 
 ### Template Format
 
@@ -360,86 +364,25 @@ Each section is separated by triple backticks with appropriate language hints (t
 
 ### LibreNMS URL Configuration
 
-Templates currently reference: `http://nms.cabnetworks.ca:8000`
+The templates include clickable links to device pages in LibreNMS. You'll need to update the URL references in each template file to match your LibreNMS installation URL.
 
-Update this URL in templates if your LibreNMS installation uses a different address.
-
----
-
-## Template Development
-
-### Creating New Templates
-
-1. Use `Template.md` as a starting point
-2. Follow the three-section structure (Alert Title, Recovery Title, HTML Template)
-3. Include standard CSS classes for consistent styling
-4. Add device details section
-5. Include conditional logic for different alert states
-6. Add relevant recommended actions for troubleshooting
-7. Test with sample alerts before deploying
-
-### Best Practices
-
-- **Use semantic HTML**: Tables for structured data, divs for content blocks
-- **Include conditional logic**: Show different content for alerts vs. recoveries
-- **Add context**: Explain what the alert means and why it matters
-- **Provide actionable guidance**: Include specific troubleshooting steps
-- **Use visual indicators**: Color-coded markers, progress bars, status badges
-- **Test thoroughly**: Verify rendering in multiple email clients
-- **Be consistent**: Follow the established color scheme and structure
-
-### CSS Classes Reference
-
-Common classes used across templates:
-
-- `.box` - Main container with shadow
-- `.table` - Primary data table
-- `.state-marker` - Colored vertical status bar
-- `.header` - Main alert header
-- `.section-header` - Section dividers
-- `.critical-box` - Red-bordered critical message box
-- `.warning-box` - Orange-bordered warning message box
-- `.recovered-box` - Green-bordered recovery message box
-- `.info-box` - Blue-bordered informational box
-- `.progress-bar-container` - Progress bar wrapper
-- `.progress-bar` - Progress bar fill element
-- `.ALERT` / `.ACKNOWLEDGED` / `.RECOVERED` - State-specific styling
-
----
-
-## Maintenance
-
-### Regular Updates
-
-- Review and update LibreNMS URL if installation changes
-- Update recommended actions based on operational experience
-- Add new templates for new alert types as needed
-- Keep threshold values aligned with organizational standards
-
-### Version Control
-
-This directory contains the production templates used by LibreNMS. Any changes should be:
-
-1. Tested in a development environment first
-2. Documented in this README
-3. Reviewed for consistent formatting and styling
-4. Backed up before deployment
-
----
-
-## Additional Files
-
-- **Template.md**: Blank template for creating new alert templates
-- **Alert Template Assignments.png**: Visual reference showing which templates are assigned to which alert rules
+Look for and replace `http://your.librenms.url/` with your actual LibreNMS server address in the template files.
 
 ---
 
 ## Contact and Support
 
-For questions about these templates or to report issues, please contact your LibreNMS administrator.
+For questions or issues with these templates:
 
-LibreNMS Documentation: https://docs.librenms.org/
+- **LibreNMS Documentation**: https://docs.librenms.org/
+- **GitHub Issues**: Report bugs or request features via GitHub Issues
 
 ---
 
-*Last Updated: 2025-11-14*
+## License
+
+This project is released into the public domain under The Unlicense. See the [LICENSE](LICENSE) file for details.
+
+---
+
+*These templates are provided as-is for the LibreNMS community.*
