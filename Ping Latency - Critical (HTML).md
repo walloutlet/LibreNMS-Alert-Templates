@@ -207,18 +207,39 @@
     @if ($alert->state == 1)
     <tr>
         <td colspan=3 class="warning-box">
-          <strong>⚠️ High Network Latency Detected:</strong> Ping response times are elevated, which may indicate network congestion, routing issues, or device performance problems affecting user experience.
+          @if ($alert->faults)
+            @foreach ($alert->faults as $key => $value)
+              @php
+                $currentLatency = $value['device_perf_avg'] ?? $value['last_ping_timetaken'] ?? 0;
+              @endphp
+              @if($currentLatency >= 10)
+                <strong>⚠️ <span style="color: #bd1e1e;">CRITICAL</span> Network Latency Detected:</strong> Ping response times have reached <span style="color: #bd1e1e;"><strong>critical levels (&gt;10ms)</strong></span>. Immediate investigation required as this indicates severe network performance degradation.
+              @elseif($currentLatency >= 5)
+                <strong>⚠️ <span style="color: #ff9800;">WARNING</span> Network Latency Detected:</strong> Ping response times have reached <span style="color: #ff9800;"><strong>warning levels (5-10ms)</strong></span>. Network performance is degraded and should be investigated promptly.
+              @elseif($currentLatency >= 1)
+                <strong>⚠️ Network Latency Notice:</strong> Ping response times are at <span style="color: #4caf50;"><strong>good levels (1-5ms)</strong></span>. While acceptable, this is above the optimal range for this low-latency environment.
+              @else
+                <strong>ℹ️ Network Performance Alert:</strong> Ping response times are at <span style="color: #2196f3;"><strong>excellent levels (&lt;1ms)</strong></span>. Alert triggered for monitoring purposes.
+              @endif
+            @endforeach
+          @else
+            <strong>⚠️ High Network Latency Detected:</strong> Ping response times have exceeded acceptable levels.
+          @endif
         </td>
     </tr>
     @else
     <tr>
         <td colspan=3 class="recovered-box">
-          <strong>✅ Latency Returned to Normal:</strong> Ping response times have returned to acceptable levels.
+          <strong>✅ Latency Alert Recovered:</strong><br>
+          Ping response times have returned to acceptable levels. The alert was previously triggered due to elevated network latency.
+          <br><br>
+          <em>Note: This is a recovery notification confirming that latency has improved. Specific latency values are not shown in recovery messages as they reflect stale data from when the alert was triggered, not current network performance.</em>
         </td>
     </tr>
     @endif
-    @if ($alert->faults)
-      @foreach ($alert->faults as $key => $value)
+    @if ($alert->state == 1)
+      @if ($alert->faults)
+        @foreach ($alert->faults as $key => $value)
     <tr>
         <td colspan=2><strong>Current Latency</strong></td>
         <td>
@@ -241,7 +262,8 @@
           </div>
         </td>
     </tr>
-      @endforeach
+        @endforeach
+      @endif
     @endif
     <tr>
         <td colspan=2><strong>Alert Duration</strong></td>
@@ -280,11 +302,11 @@
     </tr>
     <tr>
         <td colspan=2><strong>Hostname (System Name)</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device IP</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device Location</strong></td>
@@ -348,4 +370,4 @@
 </table>
 </body>
 </html>
-``
+```

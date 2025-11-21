@@ -211,10 +211,23 @@
       @php
         $offendingPorts = [];
         foreach ($alert->faults as $key => $value) {
-          $inUtil = $value['ifInOctets_perc'] ?? 0;
-          $outUtil = $value['ifOutOctets_perc'] ?? 0;
+          // Calculate utilization percentages from rate and speed
+          $inUtil = 0;
+          $outUtil = 0;
+          
+          if (isset($value['ifSpeed']) && $value['ifSpeed'] > 0) {
+            if (isset($value['ifInOctets_rate'])) {
+              $inUtil = ($value['ifInOctets_rate'] * 8 / $value['ifSpeed']) * 100;
+            }
+            if (isset($value['ifOutOctets_rate'])) {
+              $outUtil = ($value['ifOutOctets_rate'] * 8 / $value['ifSpeed']) * 100;
+            }
+          }
+          
           $maxUtil = max($inUtil, $outUtil);
           if ($maxUtil >= 80) {
+            $value['calculated_ifInOctets_perc'] = $inUtil;
+            $value['calculated_ifOutOctets_perc'] = $outUtil;
             $offendingPorts[] = $value;
           }
         }
@@ -222,28 +235,30 @@
       @if(count($offendingPorts) > 0)
         @php
           $firstPort = $offendingPorts[0];
-          $utilPerc = max($firstPort['ifInOctets_perc'] ?? 0, $firstPort['ifOutOctets_perc'] ?? 0);
+          $utilPerc = max($firstPort['calculated_ifInOctets_perc'], $firstPort['calculated_ifOutOctets_perc']);
         @endphp
     <tr>
         <td colspan=3 class="@if($utilPerc >= 95)critical-box @else warning-box @endif">
           @if($utilPerc >= 95)
             <strong>🚨 <span style="color: #bd1e1e;">CRITICAL</span> Port Utilization Detected:</strong><br>
-            Port bandwidth utilization has reached <span style="color: #bd1e1e;"><strong>critical levels (&gt;95%)</strong></span>. Network capacity is severely constrained and requires immediate intervention to prevent service degradation.
+            Port bandwidth utilization has reached <span style="color: #bd1e1e;"><strong>critical levels (≥95%)</strong></span>. Network capacity is severely constrained and requires immediate intervention to prevent service degradation.
           @elseif($utilPerc >= 80)
             <strong>⚠️ <span style="color: #ff9800;">WARNING</span> Port Utilization Detected:</strong><br>
-            Port bandwidth utilization has reached <span style="color: #ff9800;"><strong>warning levels (80-95%)</strong></span>. Network capacity is constrained and should be investigated to prevent potential bottlenecks.
+            Port bandwidth utilization has reached <span style="color: #ff9800;"><strong>warning levels (80-94%)</strong></span>. Network capacity is constrained and should be investigated to prevent potential bottlenecks.
+          @else
+            <strong>ℹ️ Port Utilization Alert:</strong><br>
+            Port bandwidth utilization is at <span style="color: #4caf50;"><strong>normal levels (&lt;80%)</strong></span>.
           @endif
           <br><br>
           <strong>Affected Ports:</strong><br>
           @foreach($offendingPorts as $port)
+            @php
+              $portIn = $port['calculated_ifInOctets_perc'];
+              $portOut = $port['calculated_ifOutOctets_perc'];
+            @endphp
             • {{ $port['ifDescr'] ?? $port['ifName'] ?? 'Unknown' }} 
-            (@if(isset($port['ifInOctets_perc']) && isset($port['ifOutOctets_perc']))
-              In: {{ number_format($port['ifInOctets_perc'], 1) }}%, Out: {{ number_format($port['ifOutOctets_perc'], 1) }}%
-            @elseif(isset($port['ifInOctets_perc']))
-              In: {{ number_format($port['ifInOctets_perc'], 1) }}%
-            @elseif(isset($port['ifOutOctets_perc']))
-              Out: {{ number_format($port['ifOutOctets_perc'], 1) }}%
-            @endif)<br>
+            (In: <span style="@if($portIn >= 95)color: #bd1e1e;@elseif($portIn >= 80)color: #ff9800;@else color: #4caf50;@endif">{{ number_format($portIn, 1) }}%</span>, 
+            Out: <span style="@if($portOut >= 95)color: #bd1e1e;@elseif($portOut >= 80)color: #ff9800;@else color: #4caf50;@endif">{{ number_format($portOut, 1) }}%</span>)<br>
           @endforeach
         </td>
     </tr>
@@ -251,7 +266,7 @@
     <tr>
         <td colspan=3 class="warning-box">
           <strong>ℹ️ Port Utilization Alert:</strong><br>
-          Port bandwidth utilization is at <span style="color: #4caf50;"><strong>normal levels (&lt;79%)</strong></span>.
+          Port bandwidth utilization is at <span style="color: #4caf50;"><strong>normal levels (&lt;80%)</strong></span>.
         </td>
     </tr>
       @endif
@@ -268,9 +283,23 @@
       @php
         $offendingPorts = [];
         foreach ($alert->faults as $key => $value) {
-          $inUtil = $value['ifInOctets_perc'] ?? 0;
-          $outUtil = $value['ifOutOctets_perc'] ?? 0;
+          // Calculate utilization percentages from rate and speed
+          $inUtil = 0;
+          $outUtil = 0;
+          
+          if (isset($value['ifSpeed']) && $value['ifSpeed'] > 0) {
+            if (isset($value['ifInOctets_rate'])) {
+              $inUtil = ($value['ifInOctets_rate'] * 8 / $value['ifSpeed']) * 100;
+            }
+            if (isset($value['ifOutOctets_rate'])) {
+              $outUtil = ($value['ifOutOctets_rate'] * 8 / $value['ifSpeed']) * 100;
+            }
+          }
+          
           $maxUtil = max($inUtil, $outUtil);
+          $value['calculated_ifInOctets_perc'] = $inUtil;
+          $value['calculated_ifOutOctets_perc'] = $outUtil;
+          
           if ($maxUtil >= 80) {
             $offendingPorts[] = ['port' => $value, 'util' => $maxUtil, 'status' => 'warning'];
           } elseif ($maxUtil >= 70) {
@@ -288,30 +317,24 @@
         <td colspan=3 class="recovered-box">
           @if($utilPerc < 80)
             <strong>✅ Utilization Returned to <span style="color: #4caf50;">Normal</span> Levels:</strong><br>
-            Port bandwidth utilization is now at <span style="color: #4caf50;"><strong>normal levels (&lt;79%)</strong></span>.
+            Port bandwidth utilization is now at <span style="color: #4caf50;"><strong>normal levels (&lt;80%)</strong></span>.
           @elseif($utilPerc < 95)
             <strong>✅ Utilization at <span style="color: #ff9800;">Warning</span> Levels:</strong><br>
-            Port bandwidth utilization is currently at <span style="color: #ff9800;"><strong>warning levels (80-95%)</strong></span>. Continue monitoring.
+            Port bandwidth utilization is currently at <span style="color: #ff9800;"><strong>warning levels (80-94%)</strong></span>. Continue monitoring.
           @else
             <strong>✅ Alert Cleared:</strong><br>
-            Port bandwidth utilization is at <span style="color: #bd1e1e;"><strong>critical levels (&gt;95%)</strong></span>. Issue may still require attention.
+            Port bandwidth utilization is at <span style="color: #bd1e1e;"><strong>critical levels (≥95%)</strong></span>. Issue may still require attention.
           @endif
           <br><br>
           <strong>Port Status:</strong><br>
           @foreach($offendingPorts as $portData)
             @php
               $port = $portData['port'];
-              $inUtil = $port['ifInOctets_perc'] ?? 0;
-              $outUtil = $port['ifOutOctets_perc'] ?? 0;
+              $inUtil = $port['calculated_ifInOctets_perc'];
+              $outUtil = $port['calculated_ifOutOctets_perc'];
             @endphp
             • {{ $port['ifDescr'] ?? $port['ifName'] ?? 'Unknown' }} 
-            (@if(isset($port['ifInOctets_perc']) && isset($port['ifOutOctets_perc']))
-              In: {{ number_format($inUtil, 1) }}%, Out: {{ number_format($outUtil, 1) }}%
-            @elseif(isset($port['ifInOctets_perc']))
-              In: {{ number_format($inUtil, 1) }}%
-            @elseif(isset($port['ifOutOctets_perc']))
-              Out: {{ number_format($outUtil, 1) }}%
-            @endif)<br>
+            (In: {{ number_format($inUtil, 1) }}%, Out: {{ number_format($outUtil, 1) }}%)<br>
           @endforeach
         </td>
     </tr>
@@ -319,7 +342,7 @@
     <tr>
         <td colspan=3 class="recovered-box">
           <strong>✅ Utilization Returned to Normal:</strong><br>
-          Port bandwidth utilization has returned to normal.
+          Port bandwidth utilization has returned to acceptable levels.
         </td>
     </tr>
       @endif
@@ -327,7 +350,7 @@
     <tr>
         <td colspan=3 class="recovered-box">
           <strong>✅ Utilization Returned to Normal:</strong><br>
-          Port bandwidth utilization has returned to normal.
+          Port bandwidth utilization has returned to acceptable levels.
         </td>
     </tr>
     @endif
@@ -335,8 +358,19 @@
     @if ($alert->faults)
       @foreach ($alert->faults as $key => $value)
         @php
-          $inUtil = $value['ifInOctets_perc'] ?? 0;
-          $outUtil = $value['ifOutOctets_perc'] ?? 0;
+          // Calculate utilization percentages from rate and speed
+          $inUtil = 0;
+          $outUtil = 0;
+          
+          if (isset($value['ifSpeed']) && $value['ifSpeed'] > 0) {
+            if (isset($value['ifInOctets_rate'])) {
+              $inUtil = ($value['ifInOctets_rate'] * 8 / $value['ifSpeed']) * 100;
+            }
+            if (isset($value['ifOutOctets_rate'])) {
+              $outUtil = ($value['ifOutOctets_rate'] * 8 / $value['ifSpeed']) * 100;
+            }
+          }
+          
           $maxUtil = max($inUtil, $outUtil);
         @endphp
         @if($maxUtil >= 80)
@@ -370,51 +404,39 @@
     <tr>
         <td colspan=2><strong>Current Utilization (Inbound)</strong></td>
         <td>
-          @if(isset($value['ifInOctets_perc']))
-            <strong style="@if($value['ifInOctets_perc'] >= 95)color: #bd1e1e;@elseif($value['ifInOctets_perc'] >= 80)color: #ff9800;@else color: #4caf50;@endif">
-              {{ number_format($value['ifInOctets_perc'], 2) }}%
+            <strong style="@if($inUtil >= 95)color: #bd1e1e;@elseif($inUtil >= 80)color: #ff9800;@else color: #4caf50;@endif">
+              {{ number_format($inUtil, 2) }}%
             </strong>
-          @else
-            N/A
-          @endif
         </td>
     </tr>
-    @if(isset($value['ifInOctets_perc']))
     <tr>
         <td colspan=3 style="padding: 10px;">
           <div class="progress-bar-container">
-            <div class="progress-bar @if($value['ifInOctets_perc'] >= 95)progress-critical @elseif($value['ifInOctets_perc'] >= 80)progress-warning @else progress-normal @endif" 
-                 style="width: {{ $value['ifInOctets_perc'] }}%;">
-              {{ number_format($value['ifInOctets_perc'], 2) }}%
+            <div class="progress-bar @if($inUtil >= 95)progress-critical @elseif($inUtil >= 80)progress-warning @else progress-normal @endif" 
+                 style="width: {{ min($inUtil, 100) }}%;">
+              {{ number_format($inUtil, 2) }}%
             </div>
           </div>
         </td>
     </tr>
-    @endif
     <tr>
         <td colspan=2><strong>Current Utilization (Outbound)</strong></td>
         <td>
-          @if(isset($value['ifOutOctets_perc']))
-            <strong style="@if($value['ifOutOctets_perc'] >= 95)color: #bd1e1e;@elseif($value['ifOutOctets_perc'] >= 80)color: #ff9800;@else color: #4caf50;@endif">
-              {{ number_format($value['ifOutOctets_perc'], 2) }}%
+            <strong style="@if($outUtil >= 95)color: #bd1e1e;@elseif($outUtil >= 80)color: #ff9800;@else color: #4caf50;@endif">
+              {{ number_format($outUtil, 2) }}%
             </strong>
-          @else
-            N/A
-          @endif
         </td>
     </tr>
-    @if(isset($value['ifOutOctets_perc']))
     <tr>
         <td colspan=3 style="padding: 10px;">
           <div class="progress-bar-container">
-            <div class="progress-bar @if($value['ifOutOctets_perc'] >= 95)progress-critical @elseif($value['ifOutOctets_perc'] >= 80)progress-warning @else progress-normal @endif" 
-                 style="width: {{ $value['ifOutOctets_perc'] }}%;">
-              {{ number_format($value['ifOutOctets_perc'], 2) }}%
+            <div class="progress-bar @if($outUtil >= 95)progress-critical @elseif($outUtil >= 80)progress-warning @else progress-normal @endif" 
+                 style="width: {{ min($outUtil, 100) }}%;">
+              {{ number_format($outUtil, 2) }}%
             </div>
           </div>
         </td>
     </tr>
-    @endif
     <tr>
         <td colspan=2><strong>Inbound Traffic Rate</strong></td>
         <td>
@@ -480,11 +502,11 @@
         <td colspan=3 style="padding: 10px;">
           <table style="width: 100%; border: none;">
             <tr>
-              <td style="border: none; padding: 5px;"><span style="color: #4caf50;">●</span> <strong>Normal:</strong> &lt; 79%</td>
-              <td style="border: none; padding: 5px;"><span style="color: #ff9800;">●</span> <strong>Warning:</strong> 80-95%</td>
+              <td style="border: none; padding: 5px;"><span style="color: #4caf50;">●</span> <strong>Normal:</strong> &lt; 80%</td>
+              <td style="border: none; padding: 5px;"><span style="color: #ff9800;">●</span> <strong>Warning:</strong> 80-94%</td>
             </tr>
             <tr>
-              <td style="border: none; padding: 5px;"><span style="color: #bd1e1e;">●</span> <strong>Critical:</strong> &gt; 95%</td>
+              <td style="border: none; padding: 5px;"><span style="color: #bd1e1e;">●</span> <strong>Critical:</strong> ≥ 95%</td>
               <td style="border: none; padding: 5px;">&nbsp;</td>
             </tr>
           </table>
@@ -497,11 +519,11 @@
     </tr>
     <tr>
         <td colspan=2><strong>Hostname (System Name)</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device IP</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device Location</strong></td>
@@ -565,4 +587,4 @@
 </table>
 </body>
 </html>
-``
+```

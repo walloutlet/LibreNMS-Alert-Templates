@@ -138,6 +138,13 @@
     margin: 10px 0;
   }
 
+  .recovered-box {
+    background-color: #ebffec;
+    border-left: 4px solid #4caf50;
+    padding: 10px;
+    margin: 10px 0;
+  }
+
   .progress-bar-container {
     background-color: #f0f0f0;
     border-radius: 4px;
@@ -199,8 +206,79 @@
     <tr>
         <td colspan=3 class="section-header">Storage Details</td>
     </tr>
+    @if ($alert->state == 1)
+    @if ($alert->faults)
+      @php
+        $affectedFilesystems = [];
+        foreach ($alert->faults as $key => $value) {
+          $perc = $value['storage_perc'] ?? 0;
+          if ($perc >= 75) {
+            $affectedFilesystems[] = $value;
+          }
+        }
+        $maxPerc = 0;
+        if (count($affectedFilesystems) > 0) {
+          foreach ($affectedFilesystems as $fs) {
+            $maxPerc = max($maxPerc, $fs['storage_perc'] ?? 0);
+          }
+        }
+      @endphp
+      @if(count($affectedFilesystems) > 0)
+    <tr>
+        <td colspan=3 class="@if($maxPerc >= 95)critical-box @elseif($maxPerc >= 90)critical-box @else warning-box @endif">
+          @if($maxPerc >= 95)
+            <strong>🚨 <span style="color: #bd1e1e;">SEVERE</span> Storage Utilization Detected:</strong><br>
+            Filesystem usage has reached <span style="color: #bd1e1e;"><strong>severe levels (≥95%)</strong></span>. Storage capacity is critically constrained and requires immediate attention to prevent system issues.
+          @elseif($maxPerc >= 90)
+            <strong>🚨 <span style="color: #bd1e1e;">CRITICAL</span> Storage Utilization Detected:</strong><br>
+            Filesystem usage has reached <span style="color: #bd1e1e;"><strong>critical levels (90-94%)</strong></span>. Storage capacity is severely constrained and requires prompt intervention.
+          @elseif($maxPerc >= 80)
+            <strong>⚠️ <span style="color: #ff9800;">WARNING</span> Storage Utilization Detected:</strong><br>
+            Filesystem usage has reached <span style="color: #ff9800;"><strong>warning levels (80-89%)</strong></span>. Storage capacity should be investigated to prevent potential issues.
+          @else
+            <strong>⚠️ <span style="color: #ff9800;">ELEVATED</span> Storage Utilization Detected:</strong><br>
+            Filesystem usage has reached <span style="color: #ff9800;"><strong>elevated levels (75-79%)</strong></span>. Storage capacity should be monitored.
+          @endif
+          <br><br>
+          <strong>Affected Filesystems:</strong><br>
+          @foreach($affectedFilesystems as $fs)
+            • {{ $fs['storage_descr'] ?? 'Unknown' }} 
+            (<span style="@if($fs['storage_perc'] >= 95)color: #bd1e1e;@elseif($fs['storage_perc'] >= 90)color: #bd1e1e;@elseif($fs['storage_perc'] >= 80)color: #ff9800;@else color: #ff9800;@endif">{{ $fs['storage_perc'] ?? 'N/A' }}%</span> used)<br>
+          @endforeach
+        </td>
+    </tr>
+      @else
+    <tr>
+        <td colspan=3 class="warning-box">
+          <strong>ℹ️ Storage Alert:</strong><br>
+          Filesystem usage is at <span style="color: #4caf50;"><strong>acceptable levels</strong></span>.
+        </td>
+    </tr>
+      @endif
+    @else
+    <tr>
+        <td colspan=3 class="warning-box">
+          <strong>⚠️ High Storage Utilization Detected:</strong><br>
+          Filesystem usage has exceeded acceptable levels.
+        </td>
+    </tr>
+    @endif
+    @else
+    <tr>
+        <td colspan=3 class="recovered-box">
+          <strong>✅ Storage Alert Recovered:</strong><br>
+          Filesystem utilization has returned to acceptable levels. The alert was previously triggered when storage usage exceeded the threshold.
+          <br><br>
+          <em>Note: This is a recovery notification confirming that storage space has been freed. Specific usage percentages and sizes shown below reflect stale data from when the alert was triggered, not current filesystem status.</em>
+        </td>
+    </tr>
+    @endif
     @if ($alert->faults)
       @foreach ($alert->faults as $key => $value)
+        @php
+          $perc = $value['storage_perc'] ?? 0;
+        @endphp
+        @if($alert->state == 1 && $perc >= 75 || $alert->state != 1)
     <tr>
         <td colspan=2><strong>Filesystem</strong></td>
         <td><strong>{{ $value['storage_descr'] ?? 'N/A' }}</strong></td>
@@ -209,9 +287,10 @@
         <td colspan=2><strong>Mount Point</strong></td>
         <td>{{ $value['storage_mib'] ?? $value['storage_descr'] ?? 'N/A' }}</td>
     </tr>
+    @if ($alert->state == 1)
     <tr>
         <td colspan=2><strong>Current Usage</strong></td>
-        <td><strong style="@if($value['storage_perc'] >= 90)color: #bd1e1e;@elseif($value['storage_perc'] >= 75)color: #ff9800;@else color: #4caf50;@endif">{{ $value['storage_perc'] ?? 'N/A' }}%</strong></td>
+        <td><strong style="@if($value['storage_perc'] >= 95)color: #bd1e1e;@elseif($value['storage_perc'] >= 90)color: #bd1e1e;@elseif($value['storage_perc'] >= 80)color: #ff9800;@else color: #ff9800;@endif">{{ $value['storage_perc'] ?? 'N/A' }}%</strong></td>
     </tr>
     <tr>
         <td colspan=3 style="padding: 10px;">
@@ -223,6 +302,12 @@
           </div>
         </td>
     </tr>
+    @else
+    <tr>
+        <td colspan=2><strong>Usage at Alert Time</strong></td>
+        <td>{{ $value['storage_perc'] ?? 'N/A' }}% <em>(stale data)</em></td>
+    </tr>
+    @endif
     <tr>
         <td colspan=2><strong>Total Size</strong></td>
         <td>
@@ -280,6 +365,10 @@
           @endphp
         </td>
     </tr>
+    <tr>
+        <td colspan=3 style="padding: 10px; background-color: #f0f0f0; border-top: 2px solid #ddd;"></td>
+    </tr>
+        @endif
       @endforeach
     @else
     <tr>
@@ -290,6 +379,33 @@
         <td colspan=2><strong>Alert Duration</strong></td>
         <td>{{ $alert->elapsed }}</td>
     </tr>
+    <tr>
+        <td colspan=2><strong>Alert Started</strong></td>
+        <td>{{ $alert->timestamp }}</td>
+    </tr>
+
+    <!-- STORAGE THRESHOLDS -->
+    <tr>
+        <td colspan=3 class="section-header">Storage Usage Reference</td>
+    </tr>
+    <tr>
+        <td colspan=3 style="padding: 10px;">
+          <table style="width: 100%; border: none;">
+            <tr>
+              <td style="border: none; padding: 5px;"><span style="color: #4caf50;">●</span> <strong>Healthy:</strong> &lt; 75%</td>
+              <td style="border: none; padding: 5px;"><span style="color: #ff9800;">●</span> <strong>Elevated:</strong> 75-79%</td>
+            </tr>
+            <tr>
+              <td style="border: none; padding: 5px;"><span style="color: #ff9800;">●</span> <strong>Warning:</strong> 80-89%</td>
+              <td style="border: none; padding: 5px;"><span style="color: #bd1e1e;">●</span> <strong>Critical:</strong> 90-94%</td>
+            </tr>
+            <tr>
+              <td style="border: none; padding: 5px;"><span style="color: #bd1e1e;">●</span> <strong>Severe:</strong> ≥ 95%</td>
+              <td style="border: none; padding: 5px;">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+    </tr>
 
     <!-- DEVICE DETAILS SECTION -->
     <tr>
@@ -297,11 +413,11 @@
     </tr>
     <tr>
         <td colspan=2><strong>Hostname (System Name)</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device IP</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device Location</strong></td>
@@ -332,11 +448,14 @@
     <tr>
         <td colspan=3 style="padding: 10px;">
           <ul style="margin: 5px 0; padding-left: 20px;">
-            <li>Investigate large files and directories on the filesystem</li>
-            <li>Check for old log files that can be rotated or deleted</li>
-            <li>Review application caches and temporary files</li>
-            <li>Consider expanding storage if consistently high usage</li>
-            <li>Verify backup and archiving processes are working correctly</li>
+            <li><strong>Investigate large files and directories</strong> - Use tools like du or ncdu to identify space consumers</li>
+            <li><strong>Check for old log files</strong> - Review and rotate or delete unnecessary logs</li>
+            <li><strong>Review application caches</strong> - Clear temporary files and application caches</li>
+            <li><strong>Verify backup processes</strong> - Ensure backups aren't filling the filesystem</li>
+            <li><strong>Check for core dumps</strong> - Remove old crash dumps if present</li>
+            <li><strong>Review database growth</strong> - If applicable, check database size and growth patterns</li>
+            <li><strong>Plan capacity expansion</strong> - Consider expanding storage if consistently high usage</li>
+            <li><strong>Implement monitoring</strong> - Set up automated cleanup policies where appropriate</li>
           </ul>
         </td>
     </tr>
@@ -348,18 +467,18 @@
     </tr>
     <tr>
         <td colspan=2><strong>Alert Rule</strong></td>
-        <td>{{ $alert->name ?? 'Root Filesystem Usage >= 90%' }}</td>
+        <td>{{ $alert->name ?? 'Storage Usage Alert' }}</td>
     </tr>
     <tr>
         <td colspan=2><strong>Severity</strong></td>
-        <td><strong style="@if($alert->severity == 'critical')color: #bd1e1e;@endif">{{ $alert->severity }}</strong></td>
+        <td><strong style="@if($alert->severity == 'critical')color: #bd1e1e;@else color: #ff9800;@endif">{{ $alert->severity }}</strong></td>
     </tr>
     <tr>
-        <td colspan=2><strong>Timestamp</strong></td>
-        <td>{{ $alert->timestamp }}</td>
+        <td colspan=2><strong>Unique ID</strong></td>
+        <td>{{ $alert->uid }}</td>
     </tr>
   </tbody>
 </table>
 </body>
 </html>
-``
+```

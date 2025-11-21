@@ -230,29 +230,16 @@
     @else
     <tr>
         <td colspan=3 class="recovered-box">
-          @if ($alert->faults)
-            @foreach ($alert->faults as $key => $value)
-              @php
-                $currentLatency = $value['device_perf_avg'] ?? $value['last_ping_timetaken'] ?? 0;
-              @endphp
-              @if($currentLatency < 1)
-                <strong>✅ Latency Returned to <span style="color: #2196f3;">Excellent</span> Levels:</strong> Ping response times are now at <span style="color: #2196f3;"><strong>excellent levels (&lt;1ms)</strong></span>.
-              @elseif($currentLatency < 5)
-                <strong>✅ Latency Returned to <span style="color: #4caf50;">Good</span> Levels:</strong> Ping response times are now at <span style="color: #4caf50;"><strong>good levels (1-5ms)</strong></span>.
-              @elseif($currentLatency < 10)
-                <strong>✅ Latency at <span style="color: #ff9800;">Warning</span> Levels:</strong> Ping response times are currently at <span style="color: #ff9800;"><strong>warning levels (5-10ms)</strong></span>. Continue monitoring.
-              @else
-                <strong>✅ Alert Cleared:</strong> Ping response times are at <span style="color: #bd1e1e;"><strong>critical levels (&gt;10ms)</strong></span>. Issue may still require attention.
-              @endif
-            @endforeach
-          @else
-            <strong>✅ Latency Returned to Normal:</strong> Ping response times have returned to acceptable levels.
-          @endif
+          <strong>✅ Latency Alert Recovered:</strong><br>
+          Ping response times have returned to acceptable levels. The alert was previously triggered due to elevated network latency.
+          <br><br>
+          <em>Note: This is a recovery notification confirming that latency has improved. Specific latency values are not shown in recovery messages as they reflect stale data from when the alert was triggered, not current network performance.</em>
         </td>
     </tr>
     @endif
-    @if ($alert->faults)
-      @foreach ($alert->faults as $key => $value)
+    @if ($alert->state == 1)
+      @if ($alert->faults)
+        @foreach ($alert->faults as $key => $value)
     <tr>
         <td colspan=2><strong>Current Latency</strong></td>
         <td>
@@ -275,7 +262,8 @@
           </div>
         </td>
     </tr>
-      @endforeach
+        @endforeach
+      @endif
     @endif
     <tr>
         <td colspan=2><strong>Alert Duration</strong></td>
@@ -314,11 +302,11 @@
     </tr>
     <tr>
         <td colspan=2><strong>Hostname (System Name)</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->hostname }} ({{ $alert->sysName }})</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device IP</strong></td>
-        <td><strong><a href="http://your.librenms.url/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
+        <td><strong><a href="http://nms.cabnetworks.ca:8000/device/{{ $alert->device_id }}/" class="entity-popup red" data-eid="{{ $alert->device_id }}" data-etype="device">{{ $alert->ip }}</a></strong></td>
     </tr>
     <tr>
         <td colspan=2><strong>Device Location</strong></td>
@@ -382,4 +370,4 @@
 </table>
 </body>
 </html>
-``
+```
